@@ -9,12 +9,16 @@ Ultimo updates:
 Eu baixei
 
 
+23/11 22:04
+adicionado thread do servidor
+
 */ 
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.List;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -22,12 +26,15 @@ import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.ArrayList;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -39,8 +46,13 @@ import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
+
 public class JogoDaVelhaDireto extends JFrame
 {
+	
+	//private Threads hue = new Threads();
+	
+	
 	private static final long serialVersionUID = 1L;
 	
 	//ServerSocket, Socket, Input and Output Streams
@@ -97,6 +109,7 @@ public class JogoDaVelhaDireto extends JFrame
 	public JogoDaVelhaDireto()
 	{
 		initUI();
+		
 	}
 	
 	// --- User Interface ---
@@ -1042,8 +1055,77 @@ public class JogoDaVelhaDireto extends JFrame
 		{
 			public void run()
 			{
-				new JogoDaVelhaDireto().setVisible(true);				
+				new JogoDaVelhaDireto().setVisible(true);
+				Thread t = new Thread(new Servidor());
+				t.start();
 			}
 		});
 	}
+	
+	
+	
+	
+	
+    static void threadMessage(String message) {
+        String threadName = Thread.currentThread().getName();
+        
+        System.out.format("%s: %s%n",
+                          threadName,
+                          message);
+        
+    }
+	
+    public static class Servidor implements Runnable {
+	    public void run() {
+	        /*String importantInfo[] = {
+	            "Mares eat oats",
+	            "Does eat oats",
+	            "Little lambs eat ivy",
+	            "A kid will eat ivy too"
+	        };*/
+	        try {
+	        	
+	        	//tem que criar UM servidor, daí se rodar o baguio de novo, tem que verificar que o servidor já está criado...
+	        	//verificando com a porta que está tentando ser usada
+	        	//daí os outros precisam criar CLIENTES. sim, vai ter cliente e servidor, não tem como fugir disso --'
+	        	
+	        	ServerSocket teste = new ServerSocket(9000);
+	        	
+	        	//criar uma lista de clientes conectados
+	        	ArrayList<ObjectOutputStream> clientes = new ArrayList<ObjectOutputStream>();
+	        	
+	        	//fica sempre ouvindo se algum cliente tenta conectar no servidor
+	        	//se algum cliente NOVO conectar, adiciona em CLIENTES
+	        	while(true){
+	        		
+	        		Socket conect = teste.accept();
+	        		
+	        		ObjectOutputStream novo = new ObjectOutputStream(conect.getOutputStream());
+	        		
+	        		clientes.add(novo);
+	        		
+	        	}
+	        	
+	        	
+	            /*for (int i = 0; i < 4; i++) {
+	    	        
+	            	System.out.println("hue1");
+
+	                // Pause for 4 seconds
+	                Thread.sleep(4000);
+	                // Print a message
+	                //threadMessage(importantInfo[i]);
+	                
+	            }*/
+	        } catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+	    }
+    }
+	
+	
+	
+	
+	
 }
