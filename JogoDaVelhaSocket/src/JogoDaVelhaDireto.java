@@ -12,7 +12,7 @@ Eu baixei
 23/11 22:04
 adicionado thread do servidor
 
-*/ 
+*/
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
@@ -35,6 +35,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.Random;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -57,9 +58,9 @@ public class JogoDaVelhaDireto extends JFrame
 	
 	//ServerSocket, Socket, Input and Output Streams
 	private ServerSocket serverSocket = null;
-	private Socket konekcija = null;
-	private ObjectInputStream ulaz = null;
-	private ObjectOutputStream izlaz = null;
+	private Socket conectar = null;
+	private ObjectInputStream entrada = null;
+	private ObjectOutputStream saida = null;
 
 	private Dimension screenSize;									// screen size
 	private int width;												// width of screen
@@ -79,27 +80,27 @@ public class JogoDaVelhaDireto extends JFrame
 	private JTextField ip, port, nick, message; 					// IP address, port number, nickname, chat message
 	private JButton join, create, novaPartija; 						// buttons : JOIN, CREATE, NEW GAME
 	
-	private String polje[] = { "","","", "","","", "","","" }; 		// FIELDS XO (see example in multiline comment)
+	private String campo[] = { "","","", "","","", "","","" }; 		// FIELDS XO (see example in multiline comment)
 	/*
 	Explanation:
-	for ex. if polje = { "X", "X", "X", ...}; then X win
+	for ex. if campo = { "X", "X", "X", ...}; then X win
 	[X][X][X]
 	[ ][ ][ ]
 	[ ][ ][ ]
-	2nd ex. if polje = { "O","","", "","O","", "","","O" };
+	2nd ex. if campo = { "O","","", "","O","", "","","O" };
 	[O][ ][ ]
 	[ ][O][ ]
 	[ ][ ][O]
 	 */
 	
 	private String xo = ""; 										// server is X , client is O
-	private String nick1, nick2, poruka; 							// nick1 server, nick2 client, chat message
+	private String nick1, nick2, mensagem; 							// nick1 server, nick2 client, chat message
 	
 	private boolean signal; 										// signal for "WHOSE TURN"
-	private boolean signalZaSlanje = true;							// if this signal is false, then stop sending messages over Internet
+	private boolean possueMensagens = true;							// if this signal is false, then stop sending messages over Internet
 	
-	private int brPartije = 0;										//The number of parties // 0=X play first; 1=O play 2nd; 3=X turn....
-	private int brPoteze = 0;										//The number of moves, if number is higher or equal to 9 , game is draw
+	private int jogadorAtual = 0;										//The number of parties // 0=X play first; 1=O play 2nd; 3=X turn....
+	private int numDeJogadas = 0;										//The number of moves, if number is higher or equal to 9 , game is draw
 	
 	private Font fontText, fontButtons; 							// Fonts
 	
@@ -146,19 +147,19 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b1.setText(xo); // set X or O button text
-					posaljiPoruku(xo + "1" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "1" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b1.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[0] = "X";
+						campo[0] = "X";
 					}
 					else
 					{
-						polje[0] = "O";
+						campo[0] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -174,19 +175,19 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b2.setText(xo);
-					posaljiPoruku(xo + "2" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "2" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b2.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[1] = "X";
+						campo[1] = "X";
 					}
 					else
 					{
-						polje[1] = "O";
+						campo[1] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -202,19 +203,19 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b3.setText(xo);
-					posaljiPoruku(xo + "3" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "3" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b3.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[2] = "X";
+						campo[2] = "X";
 					}
 					else
 					{
-						polje[2] = "O";
+						campo[2] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -230,19 +231,19 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b4.setText(xo);
-					posaljiPoruku(xo + "4" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "4" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b4.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[3] = "X";
+						campo[3] = "X";
 					}
 					else
 					{
-						polje[3] = "O";
+						campo[3] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -258,19 +259,19 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b5.setText(xo);
-					posaljiPoruku(xo + "5" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "5" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b5.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[4] = "X";
+						campo[4] = "X";
 					}
 					else
 					{
-						polje[4] = "O";
+						campo[4] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -286,19 +287,19 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b6.setText(xo);
-					posaljiPoruku(xo + "6" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "6" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b6.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[5] = "X";
+						campo[5] = "X";
 					}
 					else
 					{
-						polje[5] = "O";
+						campo[5] = "O";
 					}					
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -314,20 +315,20 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b7.setText(xo);
-					posaljiPoruku(xo + "7" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "7" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b7.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[6] = "X";
+						campo[6] = "X";
 					}
 						
 					else
 					{
-						polje[6] = "O";
+						campo[6] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -343,19 +344,19 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b8.setText(xo);
-					posaljiPoruku(xo + "8" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "8" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b8.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[7] = "X";
+						campo[7] = "X";
 					}
 					else
 					{
-						polje[7] = "O";
+						campo[7] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}
 			}
@@ -371,26 +372,26 @@ public class JogoDaVelhaDireto extends JFrame
 				if(signal)
 				{
 					b9.setText(xo);
-					posaljiPoruku(xo + "9" + safeSing);
-					posaljiPoruku("true" + safeSing);
+					enviarMsg(xo + "9" + safeSing);
+					enviarMsg("true" + safeSing);
 					signal = false;
 					b9.setEnabled(false);
 					if(xo.equals("X"))
 					{
-						polje[8] = "X";
+						campo[8] = "X";
 					}
 					else
 					{
-						polje[8] = "O";
+						campo[8] = "O";
 					}
-					++brPoteze;
+					++numDeJogadas;
 					proveriTabelu();
 				}	
 			}
 		});
 		pCenter.add(b9);
 		
-		postaviSve(false); 	// set all buttons on false till we wait for client to join
+		resetaCampos(false); 	// set all buttons on false till we wait for client to join
 		add(pCenter, BorderLayout.WEST);
 		
 		// --- PANEL DE CHAT E INFORMAÇÕES ---
@@ -438,7 +439,7 @@ public class JogoDaVelhaDireto extends JFrame
 				{
 					textArea.append(nick.getText() + ":" + message.getText() + "\n");
 					scrollToBottom();
-					posaljiPoruku(message.getText());
+					enviarMsg(message.getText());
 					message.setText(" ");
 				}
 			}
@@ -449,7 +450,9 @@ public class JogoDaVelhaDireto extends JFrame
 		ip = new JTextField("127.0.0.1");
 		ip.setToolTipText("Enter Host IP addres");
 		ip.setPreferredSize(new Dimension(100, 25));
-		port = new JTextField("9876");
+		Random gerador = new Random();
+		int porta = (gerador.nextInt(1000)) + 9000;
+		port = new JTextField(""+porta);
 		port.setToolTipText("Enter Host PORT nubmer, default:9876");
 		port.setPreferredSize(new Dimension(100, 25));
 		nick = new JTextField();
@@ -488,14 +491,14 @@ public class JogoDaVelhaDireto extends JFrame
 						return;
 					}
 					
-					konekcija = new Socket(ip.getText(), Integer.parseInt(port.getText())); 
+					conectar = new Socket(ip.getText(), Integer.parseInt(port.getText())); 
 					
-					izlaz = new ObjectOutputStream(konekcija.getOutputStream());
-					izlaz.flush();
-					ulaz = new ObjectInputStream(konekcija.getInputStream());
+					saida = new ObjectOutputStream(conectar.getOutputStream());
+					saida.flush();
+					entrada = new ObjectInputStream(conectar.getInputStream());
 					
-					poruka = (String) ulaz.readObject();
-					textArea.append(poruka + "\n");
+					mensagem = (String) entrada.readObject();
+					textArea.append(mensagem + "\n");
 					scrollToBottom();
 					
 					xo = "O";
@@ -503,12 +506,12 @@ public class JogoDaVelhaDireto extends JFrame
 					
 					nick2 = nick.getText();
 					
-					poruka = (String) ulaz.readObject(); // get nick from host
-					nick1 = "" + poruka;
+					mensagem = (String) entrada.readObject(); // get nick from host
+					nick1 = "" + mensagem;
 					
-					posaljiPoruku(nick2);
+					enviarMsg(nick2);
 					
-					postaviSve(true);
+					resetaCampos(true);
 					message.setEditable(true);
 					
 					ip.setEnabled(false);
@@ -524,12 +527,12 @@ public class JogoDaVelhaDireto extends JFrame
 					port.setEnabled(false);
 					nick.setEnabled(false);
 					
-					new PrimajPoruke("PorukaOdServera"); // thread for receive data from host		
+					new IniciarJogo("mensagemDoServidor"); // thread for receive data from host		
 				}
 				catch(Exception e)
 				{
-					ugasiSve();
-					pokreniSve();
+					finaliza();
+					reinicia();
 					try { JOptionPane.showMessageDialog(null, "JoinButton: Error: Server is offline: \n" + e); } catch (ExceptionInInitializerError exc) { }
 				}
 			}
@@ -543,34 +546,34 @@ public class JogoDaVelhaDireto extends JFrame
 		{
 			public void actionPerformed(ActionEvent e) 
 			{
-				posaljiPoruku("ZahtevZaNovuPartiju!" + safeSing); // send request to client, for new game
+				enviarMsg("SolicitarNovaPartida!" + safeSing); // send request to client, for new game
 				
-				++brPartije;
+				++jogadorAtual;
 				
-				for (int i=0; i<polje.length; i++)
+				for (int i=0; i<campo.length; i++)
 				{
-					polje[i] = "";
+					campo[i] = "";
 				}
 				
-				if(brPartije %2 == 0)
+				if(jogadorAtual %2 == 0)
 				{
 					signal = true;
 					textArea.append("X  plays first!\n");
 					scrollToBottom();
-					posaljiPoruku("false" + safeSing);
-					posaljiPoruku("X  plays first!");
+					enviarMsg("false" + safeSing);
+					enviarMsg("X  plays first!");
 				}
 				else 
 				{
 					signal = false;
-					posaljiPoruku("true" + safeSing);
+					enviarMsg("true" + safeSing);
 					textArea.append("O plays first!\n");
 					scrollToBottom();
-					posaljiPoruku("O  plays first!");
+					enviarMsg("O  plays first!");
 				}
 				
 				postaviTekstPolja();
-				postaviSve(true);
+				resetaCampos(true);
 				novaPartija.setEnabled(false);
 			}
 		});
@@ -602,11 +605,11 @@ public class JogoDaVelhaDireto extends JFrame
 			
 			public void windowClosing(WindowEvent event) 
 			{
-				if(konekcija != null) 
+				if(conectar != null) 
 				{
-					posaljiPoruku("Going offline!");
+					enviarMsg("Going offline!");
 				}
-				ugasiSve();
+				finaliza();
 			}
 		});
 	}
@@ -627,17 +630,18 @@ public class JogoDaVelhaDireto extends JFrame
 				create.setEnabled(false);
 				port.setEnabled(false);
 				nick.setEnabled(false);
-								
+				
 				serverSocket = new ServerSocket(Integer.parseInt(port.getText())); 
 				
 				textArea.append("Waiting for client...\n");
 				scrollToBottom();
-				konekcija = serverSocket.accept();
 				
-				izlaz = new ObjectOutputStream(konekcija.getOutputStream());
-				izlaz.flush();
-				ulaz = new ObjectInputStream(konekcija.getInputStream());
-				posaljiPoruku(nick.getText() +  ": Successfully connected!");
+				conectar = serverSocket.accept();
+				
+				saida = new ObjectOutputStream(conectar.getOutputStream());
+				saida.flush();
+				entrada = new ObjectInputStream(conectar.getInputStream());
+				enviarMsg(nick.getText() +  ": Successfully connected!");
 				textArea.append("Client Successfully connected!\n");
 				scrollToBottom();
 				
@@ -646,23 +650,23 @@ public class JogoDaVelhaDireto extends JFrame
 				
 				nick1 = nick.getText();
 				
-				posaljiPoruku(nick1);
+				enviarMsg(nick1);
 				
-				poruka = (String) ulaz.readObject(); // prima NICK OD SERVERA
-				nick2 = "" + poruka;
+				mensagem = (String) entrada.readObject(); // prima NICK OD SERVERA
+				nick2 = "" + mensagem;
 				
-				postaviSve(true);
+				resetaCampos(true);
 				message.setEditable(true);
 				ip.setEnabled(false);
 				
 				textArea.append("X plays first!\n");
 				scrollToBottom();
-				new PrimajPoruke("PorukaOdKlijenta"); 
+				new IniciarJogo("mensagemDoCliente"); 
 			}
 			catch (Exception e) 
 			{ 
-				ugasiSve();
-				pokreniSve();
+				finaliza();
+				reinicia();
 				try { JOptionPane.showMessageDialog(null, "CreateButton: Error while creating game:\n" + e);  } catch (ExceptionInInitializerError exc) { }
 			}
 		}
@@ -675,20 +679,20 @@ public class JogoDaVelhaDireto extends JFrame
 		if
 		(
 			// CHECK X POSITIONS - VERTICAL
-			(polje[0].equals("X") && polje[1].equals("X") && polje[2].equals("X")) || 
-			(polje[3].equals("X") && polje[4].equals("X") && polje[5].equals("X")) ||
-			(polje[6].equals("X") && polje[7].equals("X") && polje[8].equals("X")) ||
+			(campo[0].equals("X") && campo[1].equals("X") && campo[2].equals("X")) || 
+			(campo[3].equals("X") && campo[4].equals("X") && campo[5].equals("X")) ||
+			(campo[6].equals("X") && campo[7].equals("X") && campo[8].equals("X")) ||
 			// CHECK X POSITIONS - HORIZONTAL
-			(polje[0].equals("X") && polje[3].equals("X") && polje[6].equals("X")) ||
-			(polje[1].equals("X") && polje[4].equals("X") && polje[7].equals("X")) ||
-			(polje[2].equals("X") && polje[5].equals("X") && polje[8].equals("X")) ||
+			(campo[0].equals("X") && campo[3].equals("X") && campo[6].equals("X")) ||
+			(campo[1].equals("X") && campo[4].equals("X") && campo[7].equals("X")) ||
+			(campo[2].equals("X") && campo[5].equals("X") && campo[8].equals("X")) ||
 			// CHECK X POSITIONS - DIAGONAL
-			(polje[0].equals("X") && polje[4].equals("X") && polje[8].equals("X")) ||
-			(polje[2].equals("X") && polje[4].equals("X") && polje[6].equals("X"))
+			(campo[0].equals("X") && campo[4].equals("X") && campo[8].equals("X")) ||
+			(campo[2].equals("X") && campo[4].equals("X") && campo[6].equals("X"))
 		)
 		{
-			brPoteze = 0;
-			postaviSve(false);
+			numDeJogadas = 0;
+			resetaCampos(false);
 			JOptionPane.showMessageDialog(null, nick1 + " je pobedio! WIN!");
 			if(xo.equals("X")) { novaPartija.setEnabled(true); }
 		}
@@ -696,30 +700,30 @@ public class JogoDaVelhaDireto extends JFrame
 		else if
 		(
 				// CHECK O POSITIONS - HORIZONTAL
-				(polje[0].equals("O") && polje[1].equals("O") && polje[2].equals("O")) ||
-				(polje[3].equals("O") && polje[4].equals("O") && polje[5].equals("O")) ||
-				(polje[6].equals("O") && polje[7].equals("O") && polje[8].equals("O")) ||
+				(campo[0].equals("O") && campo[1].equals("O") && campo[2].equals("O")) ||
+				(campo[3].equals("O") && campo[4].equals("O") && campo[5].equals("O")) ||
+				(campo[6].equals("O") && campo[7].equals("O") && campo[8].equals("O")) ||
 				// CHECK O POSITIONS - VERTICAL
-				(polje[0].equals("O") && polje[3].equals("O") && polje[6].equals("O")) ||
-				(polje[1].equals("O") && polje[4].equals("O") && polje[7].equals("O")) ||
-				(polje[2].equals("O") && polje[5].equals("O") && polje[8].equals("O")) ||
+				(campo[0].equals("O") && campo[3].equals("O") && campo[6].equals("O")) ||
+				(campo[1].equals("O") && campo[4].equals("O") && campo[7].equals("O")) ||
+				(campo[2].equals("O") && campo[5].equals("O") && campo[8].equals("O")) ||
 				// CHECK O POSITIONS - DIAGONAL
-				(polje[0].equals("O") && polje[4].equals("O") && polje[8].equals("O")) ||
-				(polje[2].equals("O") && polje[4].equals("O") && polje[6].equals("O"))
+				(campo[0].equals("O") && campo[4].equals("O") && campo[8].equals("O")) ||
+				(campo[2].equals("O") && campo[4].equals("O") && campo[6].equals("O"))
 		)
 		{
-			brPoteze = 0;
-			postaviSve(false);
+			numDeJogadas = 0;
+			resetaCampos(false);
 			JOptionPane.showMessageDialog(null, nick2 + " je pobedio! WIN!");
 			if(xo.equals("X")) { novaPartija.setEnabled(true); }
 		}
 		else
 		{
 			//CHECK IF IS DRAW
-			if(brPoteze >= 9)
+			if(numDeJogadas >= 9)
 			{
-				brPoteze = 0;
-				posaljiPoruku("NERESENO!" + safeSing);
+				numDeJogadas = 0;
+				enviarMsg("NERESENO!" + safeSing);
 				JOptionPane.showMessageDialog(null, "DRAW/NERESENO!");
 				if(xo.equals("X")) { novaPartija.setEnabled(true); }
 			}
@@ -727,7 +731,7 @@ public class JogoDaVelhaDireto extends JFrame
 	}
 
 	// --- enable/disable buttons ---
-	private void postaviSve(boolean b)
+	private void resetaCampos(boolean b)
 	{
 		b1.setEnabled(b);
 		b2.setEnabled(b);
@@ -755,44 +759,44 @@ public class JogoDaVelhaDireto extends JFrame
 	}
 	
 	// --- Send Data over Internet ---
-	private void posaljiPoruku(String p)
+	private void enviarMsg(String p)
 	{			
 		try
 		{
-			if(signalZaSlanje)
+			if(possueMensagens)
 			{
-				izlaz.writeObject(p);
-				izlaz.flush();
+				saida.writeObject(p);
+				saida.flush();
 			}
 		}
 		catch(SocketException e)
 		{
-			if(signalZaSlanje)
+			if(possueMensagens)
 			{
-				signalZaSlanje = false;
-				ugasiSve();
-				pokreniSve();
+				possueMensagens = false;
+				finaliza();
+				reinicia();
 			}
 		}
 		catch(Exception e) 
 		{ 
-			if(signalZaSlanje)
+			if(possueMensagens)
 			{
-				signalZaSlanje = false;
-				ugasiSve();
-				pokreniSve();
+				possueMensagens = false;
+				finaliza();
+				reinicia();
 				try { JOptionPane.showMessageDialog(null, "Sending data/Disconnect:\n" + e); } catch (ExceptionInInitializerError exc) { }
 			}
 		}
 	}
 	
 	// --- Receive data/messages thread ---
-	private class PrimajPoruke implements Runnable
+	private class IniciarJogo implements Runnable
 	{	
 		private boolean nitSig;
 		private String imeNiti;
 		
-		public PrimajPoruke(String i)
+		public IniciarJogo(String i)
 		{
 			nitSig = true;
 			imeNiti = i;
@@ -805,191 +809,191 @@ public class JogoDaVelhaDireto extends JFrame
 			{
 				try
 				{
-					poruka = "";
-					poruka = (String) ulaz.readObject();			// receive messages
+					mensagem = "";
+					mensagem = (String) entrada.readObject();			// receive messages
 					
-					if(imeNiti.equals("PorukaOdServera")) 			// client receive data from host/server
+					if(imeNiti.equals("mensagemDoServidor")) 			// client receive data from host/server
 					{
-						if(poruka.equalsIgnoreCase("true" + safeSing))
+						if(mensagem.equalsIgnoreCase("true" + safeSing))
 						{
 							signal = true;
 						}
-						else if(poruka.equalsIgnoreCase("false" + safeSing))
+						else if(mensagem.equalsIgnoreCase("false" + safeSing))
 						{
 							signal = false;
 						}
-						else if(poruka.equalsIgnoreCase("NERESENO!" + safeSing))
+						else if(mensagem.equalsIgnoreCase("NERESENO!" + safeSing))
 						{
 							JOptionPane.showMessageDialog(null, "DRAW/NERESENO!");
 						}
-						else if(poruka.equalsIgnoreCase("ZahtevZaNovuPartiju!" + safeSing))
+						else if(mensagem.equalsIgnoreCase("SolicitarNovaPartida!" + safeSing))
 						{
-							for (int i=0; i<polje.length; i++)
+							for (int i=0; i<campo.length; i++)
 							{
-								polje[i] = "";
+								campo[i] = "";
 							}
 							signal = true;
 							postaviTekstPolja();
-							postaviSve(true);
+							resetaCampos(true);
 						}
-						else if(poruka.equalsIgnoreCase("X1" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X1" + safeSing))
 						{
 							b1.setText("X");
-							polje[0] = "X";
+							campo[0] = "X";
 							b1.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X2" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X2" + safeSing))
 						{
 							b2.setText("X");
-							polje[1] = "X";
+							campo[1] = "X";
 							b2.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X3" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X3" + safeSing))
 						{
 							b3.setText("X");
-							polje[2] = "X";
+							campo[2] = "X";
 							b3.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X4" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X4" + safeSing))
 						{
 							b4.setText("X");
-							polje[3] = "X";
+							campo[3] = "X";
 							b4.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X5" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X5" + safeSing))
 						{
 							b5.setText("X");
-							polje[4] = "X";
+							campo[4] = "X";
 							b5.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X6" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X6" + safeSing))
 						{
 							b6.setText("X");
-							polje[5] = "X";
+							campo[5] = "X";
 							b6.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X7" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X7" + safeSing))
 						{
 							b7.setText("X");
-							polje[6] = "X";
+							campo[6] = "X";
 							b7.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X8" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X8" + safeSing))
 						{
 							b8.setText("X");
-							polje[7] = "X";
+							campo[7] = "X";
 							b8.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("X9" + safeSing))
+						else if(mensagem.equalsIgnoreCase("X9" + safeSing))
 						{
 							b9.setText("X");
-							polje[8] = "X";
+							campo[8] = "X";
 							b9.setEnabled(false);
 							proveriTabelu();
 						}
 						else
 						{
-							if(poruka.endsWith(safeSing))
+							if(mensagem.endsWith(safeSing))
 							{
-								poruka = poruka.substring(0, poruka.length() - safeSing.length());
+								mensagem = mensagem.substring(0, mensagem.length() - safeSing.length());
 							}
-							textArea.append(nick1 + ":" + poruka + "\n");
+							textArea.append(nick1 + ":" + mensagem + "\n");
 							scrollToBottom();
 						}
 					}
-					else if(imeNiti.equals("PorukaOdKlijenta"))			// host/server receive data from client
+					else if(imeNiti.equals("mensagemDoCliente"))			// host/server receive data from client
 					{
-						if(poruka.equalsIgnoreCase("true" + safeSing))
+						if(mensagem.equalsIgnoreCase("true" + safeSing))
 						{
 							signal = true;
 						}
-						else if(poruka.equalsIgnoreCase("O1" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O1" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b1.setText("O");
-							polje[0] = "O";
+							campo[0] = "O";
 							b1.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O2" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O2" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b2.setText("O");
-							polje[1] = "O";
+							campo[1] = "O";
 							b2.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O3" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O3" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b3.setText("O");
-							polje[2] = "O";
+							campo[2] = "O";
 							b3.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O4" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O4" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b4.setText("O");
-							polje[3] = "O";
+							campo[3] = "O";
 							b4.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O5" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O5" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b5.setText("O");
-							polje[4] = "O";
+							campo[4] = "O";
 							b5.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O6" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O6" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b6.setText("O");
-							polje[5] = "O";
+							campo[5] = "O";
 							b6.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O7" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O7" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b7.setText("O");
-							polje[6] = "O";
+							campo[6] = "O";
 							b7.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O8" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O8" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b8.setText("O");
-							polje[7] = "O";
+							campo[7] = "O";
 							b8.setEnabled(false);
 							proveriTabelu();
 						}
-						else if(poruka.equalsIgnoreCase("O9" + safeSing))
+						else if(mensagem.equalsIgnoreCase("O9" + safeSing))
 						{
-							++brPoteze;
+							++numDeJogadas;
 							b9.setText("O");
-							polje[8] = "O";
+							campo[8] = "O";
 							b9.setEnabled(false);
 							proveriTabelu();
 						}
 						else
 						{
-							if(poruka.endsWith(safeSing))
+							if(mensagem.endsWith(safeSing))
 							{
-								poruka = poruka.substring(0, poruka.length() - safeSing.length());
+								mensagem = mensagem.substring(0, mensagem.length() - safeSing.length());
 							}
-							textArea.append(nick2 + ":" + poruka + "\n");
+							textArea.append(nick2 + ":" + mensagem + "\n");
 							scrollToBottom();
 						}
 					}
@@ -997,8 +1001,8 @@ public class JogoDaVelhaDireto extends JFrame
 				catch (Exception e)
 				{
 					nitSig = false;
-					ugasiSve();
-					pokreniSve();
+					finaliza();
+					reinicia();
 					try { JOptionPane.showMessageDialog(null, "Receiving Data Failed/Disconnect:\n" + e); } catch (ExceptionInInitializerError exc) { }
 				}
 			}
@@ -1006,20 +1010,20 @@ public class JogoDaVelhaDireto extends JFrame
 	}
 	
 	// --- restart the game to the initial state ---
-	private void pokreniSve()
+	private void reinicia()
 	{
 		postaviTekstPolja();
-		postaviSve(false);
+		resetaCampos(false);
 		
-		poruka = "";
+		mensagem = "";
 		xo = "";
-		signalZaSlanje = true;
-		brPoteze = 0;
-		brPartije = 0;
+		possueMensagens = true;
+		numDeJogadas = 0;
+		jogadorAtual = 0;
 		
-		for (int i=0; i<polje.length; i++)
+		for (int i=0; i<campo.length; i++)
 		{
-			polje[i] = "";
+			campo[i] = "";
 		}
 		
 		ip.setEnabled(true);
@@ -1033,13 +1037,13 @@ public class JogoDaVelhaDireto extends JFrame
 	}
 	
 	// --- Turn OFF all streams ---
-	private void ugasiSve()
+	private void finaliza()
 	{
-		try { izlaz.flush(); 		} catch (Exception e) { }
-		try { izlaz.close(); 		} catch (Exception e) { }
-		try { ulaz.close(); 		} catch (Exception e) { }
+		try { saida.flush(); 		} catch (Exception e) { }
+		try { saida.close(); 		} catch (Exception e) { }
+		try { entrada.close(); 		} catch (Exception e) { }
 		try { serverSocket.close();	} catch (Exception e) { }
-		try { konekcija.close(); 	} catch (Exception e) { }
+		try { conectar.close(); 	} catch (Exception e) { }
 	}
 	
 	// --- scroll to bottom when receive chat message ---
@@ -1083,28 +1087,28 @@ public class JogoDaVelhaDireto extends JFrame
 	            "Little lambs eat ivy",
 	            "A kid will eat ivy too"
 	        };*/
-	        try {
+	       // try {
 	        	
 	        	//tem que criar UM servidor, daí se rodar o baguio de novo, tem que verificar que o servidor já está criado...
 	        	//verificando com a porta que está tentando ser usada
 	        	//daí os outros precisam criar CLIENTES. sim, vai ter cliente e servidor, não tem como fugir disso --'
 	        	
-	        	ServerSocket teste = new ServerSocket(9000);
+	        	//ServerSocket teste = new ServerSocket(9000);
 	        	
 	        	//criar uma lista de clientes conectados
-	        	ArrayList<ObjectOutputStream> clientes = new ArrayList<ObjectOutputStream>();
+	        	//ArrayList<ObjectOutputStream> clientes = new ArrayList<ObjectOutputStream>();
 	        	
-	        	//fica sempre ouvindo se algum cliente tenta conectar no servidor
-	        	//se algum cliente NOVO conectar, adiciona em CLIENTES
-	        	while(true){
+	        	//fica sempre ouvindo se algum cliente tenta  no servidor
+	        	//se algum cliente NOVO , adiciona em CLIENTES
+	        	//while(true){
 	        		
-	        		Socket conect = teste.accept();
+	        		//Socket conect = teste.accept();
 	        		
-	        		ObjectOutputStream novo = new ObjectOutputStream(conect.getOutputStream());
+	        		//ObjectOutputStream novo = new ObjectOutputStream(conect.getOutputStream());
 	        		
-	        		clientes.add(novo);
+	        		//clientes.add(novo);
 	        		
-	        	}
+	        	//}
 	        	
 	        	
 	            /*for (int i = 0; i < 4; i++) {
@@ -1117,10 +1121,10 @@ public class JogoDaVelhaDireto extends JFrame
 	                //threadMessage(importantInfo[i]);
 	                
 	            }*/
-	        } catch (IOException e) {
+	        //} catch (IOException e) {
 				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+				//e.printStackTrace();
+			//}
 	    }
     }
 	
