@@ -85,7 +85,8 @@ public class JogoDaVelhaDireto extends JFrame
 	private JScrollPane sp;											// scroll pane for text area
 	
 	private static JTextField ip; 					// IP address, port number, nickname, chat message
-
+	public static String meuIPLocal;
+	
 	private static JTextField port;
 
 	private static JTextField nick;
@@ -431,7 +432,7 @@ public class JogoDaVelhaDireto extends JFrame
 		textAreaa.setLineWrap(true);
 		textAreaa.setEditable(false);
 		textAreaa.setFont(fontButtons);
-		textAreaa.append("Online\n"); //First line of the chat
+		textAreaa.append("Iniciando...\n"); //First line of the chat
 		JScrollPane spp = new JScrollPane(textAreaa); 
 		spp.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		pLista.add(spp, BorderLayout.CENTER);
@@ -633,7 +634,8 @@ public class JogoDaVelhaDireto extends JFrame
 				try 
 				{
 					InetAddress thisIp = InetAddress.getLocalHost();
-					ip.setText(thisIp.getHostAddress());
+					meuIPLocal = thisIp.getHostAddress();
+					ip.setText(meuIPLocal);
 				} 
 				catch (Exception e) 
 				{ 
@@ -1212,7 +1214,7 @@ public class JogoDaVelhaDireto extends JFrame
 	    	while(true){
             	try{
             		Thread.sleep(2000);
-            		textAreaa.setText("Onlinee\n");
+            		textAreaa.setText("Online\n");
             		
             		System.out.println(listaPessoasOnline.size());
             		
@@ -1238,7 +1240,7 @@ public class JogoDaVelhaDireto extends JFrame
 	    					
 	    					String stringMelhor = "ADDCLIENT ";
 	    					for (int j = 0; j < listaPessoasOnline.size(); j++) {
-	    						stringMelhor = stringMelhor + ip.getText() +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ";
+	    						stringMelhor = stringMelhor + listaPessoasOnline.get(j);
 	    					}
 	    					saida3.writeObject(stringMelhor);
 	    					
@@ -1293,7 +1295,7 @@ public class JogoDaVelhaDireto extends JFrame
 					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
 					saida3.flush();
 					
-					saida3.writeObject("ADDCLIENT "+ ip.getText() +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
+					saida3.writeObject("ADDCLIENT "+ meuIPLocal +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
 					
 					conectar3.close();
 					
