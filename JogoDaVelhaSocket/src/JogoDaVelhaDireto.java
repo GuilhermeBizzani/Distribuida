@@ -19,6 +19,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.List;
+import java.awt.TextArea;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -65,7 +66,7 @@ public class JogoDaVelhaDireto extends JFrame
 	private ObjectInputStream entrada = null;
 	private ObjectOutputStream saida = null;
 
-	String listaPessoasOnline[];
+	public static ArrayList<String> listaPessoasOnline = new ArrayList<String>();
 	
 	private Dimension screenSize;									// screen size
 	private int width;												// width of screen
@@ -83,8 +84,14 @@ public class JogoDaVelhaDireto extends JFrame
 	public static JTextArea textAreaa;									// text area on right side of frame for chat and notifications
 	private JScrollPane sp;											// scroll pane for text area
 	
-	private JTextField ip, port, nick, message; 					// IP address, port number, nickname, chat message
-	private JButton join, create, novaPartija; 						// buttons : JOIN, CREATE, NEW GAME
+	private static JTextField ip; 					// IP address, port number, nickname, chat message
+
+	private static JTextField port;
+
+	private static JTextField nick;
+
+	private JTextField message;
+	private JButton join, create, peer, novaPartija; 						// buttons : JOIN, CREATE, NEW GAME
 	
 	
 	private String campo[] = { "","","", "","","", "","","" }; 		// FIELDS XO (see example in multiline comment)
@@ -419,7 +426,7 @@ public class JogoDaVelhaDireto extends JFrame
 		// ---PAINEL CONTENDO OS CLIENTES QUE ESTÃO ONLINE---
 		JPanel pLista = new JPanel();
 		pLista.setLayout(new BorderLayout());
-		pLista.setPreferredSize(new Dimension(170, height));
+		pLista.setPreferredSize(new Dimension(270, height));
 		textAreaa = new JTextArea();
 		textAreaa.setLineWrap(true);
 		textAreaa.setEditable(false);
@@ -466,6 +473,27 @@ public class JogoDaVelhaDireto extends JFrame
 		nick.setToolTipText("Enter your Nickname");
 		nick.setPreferredSize(new Dimension(100, 25));
 		
+		
+		
+		// --- PEER BUTTON ---
+		peer = new JButton("Peer");
+		peer.setToolTipText("Connect to peer");
+		peer.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent event) 
+			{
+				if(nick.getText().equals("") || nick.getText().equals(" "))
+				{
+					try { JOptionPane.showMessageDialog(null, "You did not input your nickname!"); } catch (ExceptionInInitializerError exc) { }
+					return;
+				}
+				
+				new PeerButtonThread("PeerButton"); // we need thread while we wait for client, because we don't want frozen frame
+
+			}
+		});
+		
+		
 		// --- CREATE BUTTON ---
 		create = new JButton("Create");
 		create.setToolTipText("Create game");
@@ -480,27 +508,7 @@ public class JogoDaVelhaDireto extends JFrame
 				}
 				
 				new CreateButtonThread("CreateButton"); // we need thread while we wait for client, because we don't want frozen frame
-				
-				
-				//Broadcast do IP para todos.
-				try {
-					
-					Socket conectar3 = null;
-					ObjectOutputStream saida3 = null;
-					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
-					conectar3 = new Socket("192.168.1.33", 10101);
-					
-					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
-					saida3.flush();
-					
-					saida3.writeObject("ADDCLIENT "+ ip.getText() +" "+ port.getText() +" "+ nick.getText() + " ;");
-					
-					conectar3.close();
-					
-				} catch(Exception e) { 
-					System.out.println(e.getStackTrace());
-				}
-				
+
 			}
 		});
 	
@@ -551,6 +559,7 @@ public class JogoDaVelhaDireto extends JFrame
 					
 					join.setEnabled(false);
 					create.setEnabled(false);
+					peer.setEnabled(true);
 					ip.setEnabled(false);
 					port.setEnabled(false);
 					nick.setEnabled(false);
@@ -607,6 +616,7 @@ public class JogoDaVelhaDireto extends JFrame
 		});
 		
 		JPanel pNorth = new JPanel();
+		pNorth.add(peer);
 		pNorth.add(ip);
 		pNorth.add(port);
 		pNorth.add(nick);
@@ -1088,8 +1098,10 @@ public class JogoDaVelhaDireto extends JFrame
 			public void run()
 			{
 				new JogoDaVelhaDireto().setVisible(true);
-				Thread t = new Thread(new Servidor());
-				t.start();
+				Thread t1 = new Thread(new ServidorDePessoas());
+				t1.start();
+				Thread t2 = new Thread(new AtualizaListaDeOnline());
+				t2.start();
 			}
 		});
 	}
@@ -1107,7 +1119,7 @@ public class JogoDaVelhaDireto extends JFrame
         
     }
 	
-    public static class Servidor implements Runnable {
+    public static class ServidorDePessoas implements Runnable {
 	    @SuppressWarnings("deprecation")
 		public void run() {
 	        
@@ -1135,39 +1147,50 @@ public class JogoDaVelhaDireto extends JFrame
             	conectados = new ServerSocket(10101); 
             	String response;
             	
-	            for (int i = 0; i < 99; i++) {
+	           while(true) {
 	    	        
-	            	
-					textArea.append("Aguardando conexao...\n");
-					
-					conectar2 = conectados.accept();
-					
-					saida = new ObjectOutputStream(conectar2.getOutputStream());
-					saida.flush();
-					entrada = new ObjectInputStream(conectar2.getInputStream());
-					response = (String)entrada.readObject();
-					
-					textArea.append("CLIENTE FALOU: "+ response + "\n");
-					
-					
-					
-					if (response.startsWith("ADDCLIENT")) {
-						String mensagemRecebida = response.substring(10);
-						textAreaa.append(""+ response + "\n");
+	            	try {
+						textArea.append("Aguardando conexao...\n");
 						
-					} else if (response.startsWith("OPPONENT_MOVED")) {
+						conectar2 = conectados.accept();
 						
-					}
-					
-					textArea.append("Conexao finalizada\n ");
-	            	
-	            	
-	            	
-	            	
-	            	
-	            	
-	            	
-	            	System.out.println("Passou na thread "+ i);
+						saida = new ObjectOutputStream(conectar2.getOutputStream());
+						saida.flush();
+						entrada = new ObjectInputStream(conectar2.getInputStream());
+						response = (String)entrada.readObject();
+						
+						textArea.append("CLIENTE FALOU: "+ response + "\n");
+						
+						
+						
+						if (response.startsWith("ADDCLIENT")) {
+							String mensagemRecebida = response.substring(10);
+							String partes[] = mensagemRecebida.split(" <#> ");
+							
+							for (int i = 0; i < partes.length; i++) {
+								listaPessoasOnline.add(partes[i]);
+							}
+							
+							
+						} else if (response.startsWith("OPPONENT_MOVED")) {
+							
+						}
+						
+						textArea.append("Conexao finalizada\n ");
+		            	
+						
+						
+						//String partes[] = mensagemRecebida.split(" <> ");
+						//textAreaa.append(""+ partes[0] + "\n");
+		            	
+		            	
+		            	
+		            	
+		            	
+		            	System.out.println("Passou na thread de atualizar pessoas");
+	            	} catch (Exception e) {
+	            		e.printStackTrace();
+	            	}
 
 	                Thread.sleep(1000);
 	                // Print a message
@@ -1179,6 +1202,115 @@ public class JogoDaVelhaDireto extends JFrame
 			}
 	    }
     }
+    
+    
+    public static class AtualizaListaDeOnline implements Runnable {
+	    @SuppressWarnings("deprecation")
+		public void run() {
+	        
+            
+	    	while(true){
+            	try{
+            		Thread.sleep(2000);
+            		textAreaa.setText("Onlinee\n");
+            		
+            		System.out.println(listaPessoasOnline.size());
+            		
+            		for (int i = 0; i < listaPessoasOnline.size(); i++) {
+	            		String partes[] = listaPessoasOnline.get(i).split(" <> ");
+	            		textAreaa.append(""+ partes[0] + ":");
+	            		textAreaa.append(""+ partes[1] + " -> ");
+	            		textAreaa.append(""+ partes[2] + "\n");
+	    				System.out.println(textAreaa.getText());
+	    				
+	    				
+	    				//Mandar pra galera
+	    				//Broadcast do IP para todos.
+	    				try {
+	    					
+	    					Socket conectar3 = null;
+	    					ObjectOutputStream saida3 = null;
+	    					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
+	    					conectar3 = new Socket(partes[0], 10101);
+	    					
+	    					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
+	    					saida3.flush();
+	    					
+	    					String stringMelhor = "ADDCLIENT ";
+	    					for (int j = 0; j < listaPessoasOnline.size(); j++) {
+	    						stringMelhor = stringMelhor + ip.getText() +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ";
+	    					}
+	    					saida3.writeObject(stringMelhor);
+	    					
+	    					conectar3.close();
+	    					
+	    				} catch(Exception e) { 
+	    					System.out.println(e.getStackTrace());
+	    				}
+	    				
+            		}
+                	
+
+                	System.out.println("Passou na thread atualizadora de text fields ");
+
+                    // Print a message
+
+            		
+            	} catch ( Exception e){
+            		e.printStackTrace();
+            	}
+				
+            }
+      
+	    }
+    }
+    
+    
+    
+ // --- PEER BUTTON THREAD ---
+ 	private class PeerButtonThread implements Runnable
+ 	{	
+ 		public PeerButtonThread(String name)
+ 		{
+ 			new Thread(this, name).start();
+ 		}
+ 		
+ 		public void run()
+ 		{
+ 			try 
+ 			{
+ 				//peer.setEnabled(false);
+ 				
+ 				
+ 				//Broadcast do IP para todos.
+				try {
+					
+					Socket conectar3 = null;
+					ObjectOutputStream saida3 = null;
+					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
+					conectar3 = new Socket("192.168.1.33", 10101);
+					
+					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
+					saida3.flush();
+					
+					saida3.writeObject("ADDCLIENT "+ ip.getText() +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
+					
+					conectar3.close();
+					
+				} catch(Exception e) { 
+					System.out.println(e.getStackTrace());
+				}
+ 				
+ 				
+ 			}
+ 			catch (Exception e) 
+ 			{ 
+ 				finaliza();
+ 				reinicia();
+ 				try { JOptionPane.showMessageDialog(null, "PeerButton: Error while joining peer:\n" + e);  } catch (ExceptionInInitializerError exc) { }
+ 			}
+ 		}
+ 	}
 	
 	
 	
