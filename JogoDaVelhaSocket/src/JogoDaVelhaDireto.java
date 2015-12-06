@@ -75,6 +75,7 @@ public class JogoDaVelhaDireto extends JFrame
 	 */
 	
 	private JTextArea textArea;										// text area on right side of frame for chat and notifications
+	public static JTextArea textAreaa;									// text area on right side of frame for chat and notifications
 	private JScrollPane sp;											// scroll pane for text area
 	
 	private JTextField ip, port, nick, message; 					// IP address, port number, nickname, chat message
@@ -413,11 +414,11 @@ public class JogoDaVelhaDireto extends JFrame
 		JPanel pLista = new JPanel();
 		pLista.setLayout(new BorderLayout());
 		pLista.setPreferredSize(new Dimension(170, height));
-		JTextArea textAreaa = new JTextArea();
+		textAreaa = new JTextArea();
 		textAreaa.setLineWrap(true);
 		textAreaa.setEditable(false);
 		textAreaa.setFont(fontButtons);
-		textAreaa.append("Game started\n"); //First line of the chat
+		textAreaa.append("Online\n"); //First line of the chat
 		JScrollPane spp = new JScrollPane(textAreaa); 
 		spp.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		pLista.add(spp, BorderLayout.CENTER);
@@ -1081,50 +1082,60 @@ public class JogoDaVelhaDireto extends JFrame
 	
     public static class Servidor implements Runnable {
 	    public void run() {
-	        /*String importantInfo[] = {
-	            "Mares eat oats",
-	            "Does eat oats",
-	            "Little lambs eat ivy",
-	            "A kid will eat ivy too"
-	        };*/
-	       // try {
+	        
+	        try {
 	        	
 	        	//tem que criar UM servidor, daí se rodar o baguio de novo, tem que verificar que o servidor já está criado...
 	        	//verificando com a porta que está tentando ser usada
 	        	//daí os outros precisam criar CLIENTES. sim, vai ter cliente e servidor, não tem como fugir disso --'
 	        	
-	        	//ServerSocket teste = new ServerSocket(9000);
+	        	//ServerSocket conectados = new ServerSocket(10101);
 	        	
 	        	//criar uma lista de clientes conectados
-	        	//ArrayList<ObjectOutputStream> clientes = new ArrayList<ObjectOutputStream>();
+	        	ArrayList<ObjectOutputStream> clientes = new ArrayList<ObjectOutputStream>();
 	        	
 	        	//fica sempre ouvindo se algum cliente tenta  no servidor
 	        	//se algum cliente NOVO , adiciona em CLIENTES
-	        	//while(true){
-	        		
-	        		//Socket conect = teste.accept();
-	        		
-	        		//ObjectOutputStream novo = new ObjectOutputStream(conect.getOutputStream());
-	        		
-	        		//clientes.add(novo);
-	        		
-	        	//}
 	        	
 	        	
-	            /*for (int i = 0; i < 4; i++) {
-	    	        
-	            	System.out.println("hue1");
+	        	Socket conectar2 = null;
+	        	ServerSocket conectados;
+	        	ObjectInputStream entrada = null;
+	        	ObjectOutputStream saida = null;
+	        	
+            	//serverSocket = new ServerSocket(Integer.parseInt(port.getText())); 
+            	conectados = new ServerSocket(10101); 
 
-	                // Pause for 4 seconds
-	                Thread.sleep(4000);
+	            for (int i = 0; i < 4; i++) {
+	    	        
+	            	
+					
+					textAreaa.append("Waiting for client...\n");
+					
+					conectar2 = conectados.accept();
+					
+					saida = new ObjectOutputStream(conectar2.getOutputStream());
+					saida.flush();
+					entrada = new ObjectInputStream(conectar2.getInputStream());
+					
+					textAreaa.append("Client Successfully connected!\n");
+	            	
+	            	
+	            	
+	            	
+	            	
+	            	
+	            	
+	            	System.out.println("hue1 "+ i);
+
+	                Thread.sleep(1000);
 	                // Print a message
-	                //threadMessage(importantInfo[i]);
-	                
-	            }*/
-	        //} catch (IOException e) {
+
+	            }
+	        } catch (Exception e) {
 				// TODO Auto-generated catch block
-				//e.printStackTrace();
-			//}
+				e.printStackTrace();
+			}
 	    }
     }
 	
