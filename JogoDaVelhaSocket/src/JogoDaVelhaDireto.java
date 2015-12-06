@@ -1170,7 +1170,16 @@ public class JogoDaVelhaDireto extends JFrame
 							String partes[] = mensagemRecebida.split(" <#> ");
 							
 							for (int i = 0; i < partes.length; i++) {
-								listaPessoasOnline.add(partes[i]);
+								
+								//Verifica se a pessoa que ta entrando ja ta na lista
+								int achou = 0;
+								for (int k = 0; k < listaPessoasOnline.size(); k++) {
+									if (listaPessoasOnline.get(k) == partes[i] ){
+										achou = 1;	//Se tiver alguem, fica 1
+									}
+								}
+								if (achou == 0) //Se nao tiver ainda, adiciona
+									listaPessoasOnline.add(partes[i]);
 							}
 							
 							
