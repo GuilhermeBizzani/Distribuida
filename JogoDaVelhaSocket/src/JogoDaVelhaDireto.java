@@ -67,6 +67,7 @@ public class JogoDaVelhaDireto extends JFrame
 	private ObjectOutputStream saida = null;
 
 	public static ArrayList<String> listaPessoasOnline = new ArrayList<String>();
+	public static String meuNick;
 	
 	private Dimension screenSize;									// screen size
 	private int width;												// width of screen
@@ -470,7 +471,8 @@ public class JogoDaVelhaDireto extends JFrame
 		port = new JTextField(""+porta);
 		port.setToolTipText("Enter Host PORT nubmer, default:9876");
 		port.setPreferredSize(new Dimension(100, 25));
-		nick = new JTextField();
+		nick = new JTextField(meuNick);
+		nick.setEditable(false);
 		nick.setToolTipText("Enter your Nickname");
 		nick.setPreferredSize(new Dimension(100, 25));
 		
@@ -845,6 +847,7 @@ public class JogoDaVelhaDireto extends JFrame
 		
 		public void run()
 		{
+
 			while(nitSig)
 			{
 				try
@@ -1092,13 +1095,30 @@ public class JogoDaVelhaDireto extends JFrame
 		textArea.setCaretPosition(textArea.getText().length());
 	}
 
+	
 	// --- Main ---
 	public static void main(String[] args)
 	{
+
+		String nome = null;
+		while (nome == null || nome.equals("")) {
+			nome = JOptionPane.showInputDialog("Qual o seu nome?");
+			if (nome == null || nome.equals("")) {
+			JOptionPane.showMessageDialog(null,
+			"Você não respondeu a pergunta.");
+			}
+		}
+		//JOptionPane.showMessageDialog(null, "Seu nome é " + nome);
+		meuNick = nome;
+
+
+		
+		
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			public void run()
 			{
+
 				new JogoDaVelhaDireto().setVisible(true);
 				Thread t1 = new Thread(new ServidorDePessoas());
 				t1.start();
@@ -1108,9 +1128,7 @@ public class JogoDaVelhaDireto extends JFrame
 		});
 	}
 	
-	
-	
-	
+
 	
     static void threadMessage(String message) {
         String threadName = Thread.currentThread().getName();
@@ -1152,7 +1170,7 @@ public class JogoDaVelhaDireto extends JFrame
 	           while(true) {
 	    	        
 	            	try {
-						textArea.append("Aguardando conexao...\n");
+						//textArea.append("Aguardando conexao...\n");
 						
 						conectar2 = conectados.accept();
 						
@@ -1161,7 +1179,7 @@ public class JogoDaVelhaDireto extends JFrame
 						entrada = new ObjectInputStream(conectar2.getInputStream());
 						response = (String)entrada.readObject();
 						
-						textArea.append("CLIENTE FALOU: "+ response + "\n");
+						//textArea.append("CLIENTE FALOU: "+ response + "\n");
 						
 						
 						
@@ -1174,20 +1192,21 @@ public class JogoDaVelhaDireto extends JFrame
 								//Verifica se a pessoa que ta entrando ja ta na lista
 								int achou = 0;
 								for (int k = 0; k < listaPessoasOnline.size(); k++) {
-									if (listaPessoasOnline.get(k) == partes[i] ){
+									if (listaPessoasOnline.get(k).equals(partes[i]) ){
 										achou = 1;	//Se tiver alguem, fica 1
 									}
 								}
-								if (achou == 0) //Se nao tiver ainda, adiciona
+								if (achou == 0){ //Se nao tiver ainda, adiciona
 									listaPessoasOnline.add(partes[i]);
+								}
 							}
 							
 							
-						} else if (response.startsWith("OPPONENT_MOVED")) {
+						} else if (response.startsWith("DELETECLIENT")) {
 							
 						}
 						
-						textArea.append("Conexao finalizada\n ");
+						//textArea.append("Conexao finalizada\n ");
 		            	
 						
 						
@@ -1218,8 +1237,16 @@ public class JogoDaVelhaDireto extends JFrame
     public static class AtualizaListaDeOnline implements Runnable {
 	    @SuppressWarnings("deprecation")
 		public void run() {
-	        
-            
+
+	    	try {
+				Thread.sleep(100);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+	    	
+	    	listaPessoasOnline.add(meuIPLocal +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
+	    	
 	    	while(true){
             	try{
             		Thread.sleep(2000);
@@ -1229,11 +1256,13 @@ public class JogoDaVelhaDireto extends JFrame
             		
             		for (int i = 0; i < listaPessoasOnline.size(); i++) {
 	            		String partes[] = listaPessoasOnline.get(i).split(" <> ");
+	            		
+	            		if (partes[0].equals(meuIPLocal)) continue;
+	            		
 	            		textAreaa.append(""+ partes[0] + ":");
 	            		textAreaa.append(""+ partes[1] + " -> ");
 	            		textAreaa.append(""+ partes[2] + "\n");
 	    				System.out.println(textAreaa.getText());
-	    				
 	    				
 	    				//Mandar pra galera
 	    				//Broadcast do IP para todos.
@@ -1291,7 +1320,7 @@ public class JogoDaVelhaDireto extends JFrame
  			try 
  			{
  				//peer.setEnabled(false);
- 				
+ 				//listaPessoasOnline.add(meuIPLocal +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
  				
  				//Broadcast do IP para todos.
 				try {
@@ -1299,7 +1328,8 @@ public class JogoDaVelhaDireto extends JFrame
 					Socket conectar3 = null;
 					ObjectOutputStream saida3 = null;
 					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
-					conectar3 = new Socket("192.168.1.33", 10101);
+					conectar3 = new Socket(ip.getText(), 10101);
+					//conectar3 = new Socket("192.168.1.33", 10101);
 					
 					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
 					saida3.flush();
