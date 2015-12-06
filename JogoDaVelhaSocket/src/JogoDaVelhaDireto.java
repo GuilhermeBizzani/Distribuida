@@ -37,8 +37,10 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Random;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -46,6 +48,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+
 
 
 public class JogoDaVelhaDireto extends JFrame
@@ -62,6 +65,8 @@ public class JogoDaVelhaDireto extends JFrame
 	private ObjectInputStream entrada = null;
 	private ObjectOutputStream saida = null;
 
+	String listaPessoasOnline[];
+	
 	private Dimension screenSize;									// screen size
 	private int width;												// width of screen
 	private int height;												// height of screen
@@ -74,12 +79,13 @@ public class JogoDaVelhaDireto extends JFrame
 	 [b7][b8][b9]
 	 */
 	
-	private JTextArea textArea;										// text area on right side of frame for chat and notifications
+	private static JTextArea textArea;										// text area on right side of frame for chat and notifications
 	public static JTextArea textAreaa;									// text area on right side of frame for chat and notifications
 	private JScrollPane sp;											// scroll pane for text area
 	
 	private JTextField ip, port, nick, message; 					// IP address, port number, nickname, chat message
 	private JButton join, create, novaPartija; 						// buttons : JOIN, CREATE, NEW GAME
+	
 	
 	private String campo[] = { "","","", "","","", "","","" }; 		// FIELDS XO (see example in multiline comment)
 	/*
@@ -487,8 +493,8 @@ public class JogoDaVelhaDireto extends JFrame
 					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
 					saida3.flush();
 					
-					saida3.writeObject("cu");
-					saida3.flush();
+					saida3.writeObject("ADDCLIENT "+ ip.getText() +" "+ port.getText() +" "+ nick.getText() + " ;");
+					
 					conectar3.close();
 					
 				} catch(Exception e) { 
@@ -1132,28 +1138,28 @@ public class JogoDaVelhaDireto extends JFrame
 	            for (int i = 0; i < 99; i++) {
 	    	        
 	            	
-					
-					textAreaa.append("Aguardando conexao...\n");
+					textArea.append("Aguardando conexao...\n");
 					
 					conectar2 = conectados.accept();
 					
 					saida = new ObjectOutputStream(conectar2.getOutputStream());
 					saida.flush();
 					entrada = new ObjectInputStream(conectar2.getInputStream());
-					response = entrada.readLine();
+					response = (String)entrada.readObject();
+					
+					textArea.append("CLIENTE FALOU: "+ response + "\n");
 					
 					
-					textAreaa.append("CLIENTE FALOU: "+ response + "\n");
 					
-					
-					if (response.startsWith("WELCOME")) {
-						
+					if (response.startsWith("ADDCLIENT")) {
+						String mensagemRecebida = response.substring(10);
+						textAreaa.append(""+ response + "\n");
 						
 					} else if (response.startsWith("OPPONENT_MOVED")) {
 						
 					}
 					
-					textAreaa.append("Conexao finalizada\n ");
+					textArea.append("Conexao finalizada\n ");
 	            	
 	            	
 	            	
