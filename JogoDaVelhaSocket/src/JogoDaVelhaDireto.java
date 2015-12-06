@@ -474,6 +474,27 @@ public class JogoDaVelhaDireto extends JFrame
 				}
 				
 				new CreateButtonThread("CreateButton"); // we need thread while we wait for client, because we don't want frozen frame
+				
+				
+				//Broadcast do IP para todos.
+				try {
+					
+					Socket conectar3 = null;
+					ObjectOutputStream saida3 = null;
+					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
+					conectar3 = new Socket("192.168.1.33", 10101);
+					
+					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
+					saida3.flush();
+					
+					saida3.writeObject("cu");
+					saida3.flush();
+					conectar3.close();
+					
+				} catch(Exception e) { 
+					System.out.println(e.getStackTrace());
+				}
+				
 			}
 		});
 	
@@ -1081,7 +1102,8 @@ public class JogoDaVelhaDireto extends JFrame
     }
 	
     public static class Servidor implements Runnable {
-	    public void run() {
+	    @SuppressWarnings("deprecation")
+		public void run() {
 	        
 	        try {
 	        	
@@ -1105,20 +1127,33 @@ public class JogoDaVelhaDireto extends JFrame
 	        	
             	//serverSocket = new ServerSocket(Integer.parseInt(port.getText())); 
             	conectados = new ServerSocket(10101); 
-
-	            for (int i = 0; i < 4; i++) {
+            	String response;
+            	
+	            for (int i = 0; i < 99; i++) {
 	    	        
 	            	
 					
-					textAreaa.append("Waiting for client...\n");
+					textAreaa.append("Aguardando conexao...\n");
 					
 					conectar2 = conectados.accept();
 					
 					saida = new ObjectOutputStream(conectar2.getOutputStream());
 					saida.flush();
 					entrada = new ObjectInputStream(conectar2.getInputStream());
+					response = entrada.readLine();
 					
-					textAreaa.append("Client Successfully connected!\n");
+					
+					textAreaa.append("CLIENTE FALOU: "+ response + "\n");
+					
+					
+					if (response.startsWith("WELCOME")) {
+						
+						
+					} else if (response.startsWith("OPPONENT_MOVED")) {
+						
+					}
+					
+					textAreaa.append("Conexao finalizada\n ");
 	            	
 	            	
 	            	
@@ -1126,7 +1161,7 @@ public class JogoDaVelhaDireto extends JFrame
 	            	
 	            	
 	            	
-	            	System.out.println("hue1 "+ i);
+	            	System.out.println("Passou na thread "+ i);
 
 	                Thread.sleep(1000);
 	                // Print a message
