@@ -19,6 +19,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.List;
+import java.awt.TextArea;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -37,8 +38,10 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Random;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -46,6 +49,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+
 
 
 public class JogoDaVelhaDireto extends JFrame
@@ -62,6 +66,9 @@ public class JogoDaVelhaDireto extends JFrame
 	private ObjectInputStream entrada = null;
 	private ObjectOutputStream saida = null;
 
+	public static ArrayList<String> listaPessoasOnline = new ArrayList<String>();
+	public static String meuNick;
+	
 	private Dimension screenSize;									// screen size
 	private int width;												// width of screen
 	private int height;												// height of screen
@@ -74,12 +81,20 @@ public class JogoDaVelhaDireto extends JFrame
 	 [b7][b8][b9]
 	 */
 	
-	private JTextArea textArea;										// text area on right side of frame for chat and notifications
+	private static JTextArea textArea;										// text area on right side of frame for chat and notifications
 	public static JTextArea textAreaa;									// text area on right side of frame for chat and notifications
 	private JScrollPane sp;											// scroll pane for text area
 	
-	private JTextField ip, port, nick, message; 					// IP address, port number, nickname, chat message
-	private JButton join, create, novaPartija; 						// buttons : JOIN, CREATE, NEW GAME
+	private static JTextField ip; 					// IP address, port number, nickname, chat message
+	public static String meuIPLocal;
+	
+	private static JTextField port;
+
+	private static JTextField nick;
+
+	private JTextField message;
+	private JButton join, create, peer, novaPartija; 						// buttons : JOIN, CREATE, NEW GAME
+	
 	
 	private String campo[] = { "","","", "","","", "","","" }; 		// FIELDS XO (see example in multiline comment)
 	/*
@@ -413,12 +428,12 @@ public class JogoDaVelhaDireto extends JFrame
 		// ---PAINEL CONTENDO OS CLIENTES QUE ESTÃO ONLINE---
 		JPanel pLista = new JPanel();
 		pLista.setLayout(new BorderLayout());
-		pLista.setPreferredSize(new Dimension(170, height));
+		pLista.setPreferredSize(new Dimension(270, height));
 		textAreaa = new JTextArea();
 		textAreaa.setLineWrap(true);
 		textAreaa.setEditable(false);
 		textAreaa.setFont(fontButtons);
-		textAreaa.append("Online\n"); //First line of the chat
+		textAreaa.append("Iniciando...\n"); //First line of the chat
 		JScrollPane spp = new JScrollPane(textAreaa); 
 		spp.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
 		pLista.add(spp, BorderLayout.CENTER);
@@ -456,9 +471,31 @@ public class JogoDaVelhaDireto extends JFrame
 		port = new JTextField(""+porta);
 		port.setToolTipText("Enter Host PORT nubmer, default:9876");
 		port.setPreferredSize(new Dimension(100, 25));
-		nick = new JTextField();
+		nick = new JTextField(meuNick);
+		nick.setEditable(false);
 		nick.setToolTipText("Enter your Nickname");
 		nick.setPreferredSize(new Dimension(100, 25));
+		
+		
+		
+		// --- PEER BUTTON ---
+		peer = new JButton("Peer");
+		peer.setToolTipText("Connect to peer");
+		peer.addActionListener(new ActionListener()
+		{
+			public void actionPerformed(ActionEvent event) 
+			{
+				if(nick.getText().equals("") || nick.getText().equals(" "))
+				{
+					try { JOptionPane.showMessageDialog(null, "You did not input your nickname!"); } catch (ExceptionInInitializerError exc) { }
+					return;
+				}
+				
+				new PeerButtonThread("PeerButton"); // we need thread while we wait for client, because we don't want frozen frame
+
+			}
+		});
+		
 		
 		// --- CREATE BUTTON ---
 		create = new JButton("Create");
@@ -474,27 +511,7 @@ public class JogoDaVelhaDireto extends JFrame
 				}
 				
 				new CreateButtonThread("CreateButton"); // we need thread while we wait for client, because we don't want frozen frame
-				
-				
-				//Broadcast do IP para todos.
-				try {
-					
-					Socket conectar3 = null;
-					ObjectOutputStream saida3 = null;
-					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
-					conectar3 = new Socket("192.168.1.33", 10101);
-					
-					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
-					saida3.flush();
-					
-					saida3.writeObject("cu");
-					saida3.flush();
-					conectar3.close();
-					
-				} catch(Exception e) { 
-					System.out.println(e.getStackTrace());
-				}
-				
+
 			}
 		});
 	
@@ -545,6 +562,7 @@ public class JogoDaVelhaDireto extends JFrame
 					
 					join.setEnabled(false);
 					create.setEnabled(false);
+					peer.setEnabled(true);
 					ip.setEnabled(false);
 					port.setEnabled(false);
 					nick.setEnabled(false);
@@ -601,6 +619,7 @@ public class JogoDaVelhaDireto extends JFrame
 		});
 		
 		JPanel pNorth = new JPanel();
+		pNorth.add(peer);
 		pNorth.add(ip);
 		pNorth.add(port);
 		pNorth.add(nick);
@@ -617,7 +636,8 @@ public class JogoDaVelhaDireto extends JFrame
 				try 
 				{
 					InetAddress thisIp = InetAddress.getLocalHost();
-					ip.setText(thisIp.getHostAddress());
+					meuIPLocal = thisIp.getHostAddress();
+					ip.setText(meuIPLocal);
 				} 
 				catch (Exception e) 
 				{ 
@@ -827,6 +847,7 @@ public class JogoDaVelhaDireto extends JFrame
 		
 		public void run()
 		{
+
 			while(nitSig)
 			{
 				try
@@ -1074,23 +1095,40 @@ public class JogoDaVelhaDireto extends JFrame
 		textArea.setCaretPosition(textArea.getText().length());
 	}
 
+	
 	// --- Main ---
 	public static void main(String[] args)
 	{
+
+		String nome = null;
+		while (nome == null || nome.equals("")) {
+			nome = JOptionPane.showInputDialog("Qual o seu nome?");
+			if (nome == null || nome.equals("")) {
+			JOptionPane.showMessageDialog(null,
+			"Você não respondeu a pergunta.");
+			}
+		}
+		//JOptionPane.showMessageDialog(null, "Seu nome é " + nome);
+		meuNick = nome;
+
+
+		
+		
 		SwingUtilities.invokeLater(new Runnable()
 		{
 			public void run()
 			{
+
 				new JogoDaVelhaDireto().setVisible(true);
-				Thread t = new Thread(new Servidor());
-				t.start();
+				Thread t1 = new Thread(new ServidorDePessoas());
+				t1.start();
+				Thread t2 = new Thread(new AtualizaListaDeOnline());
+				t2.start();
 			}
 		});
 	}
 	
-	
-	
-	
+
 	
     static void threadMessage(String message) {
         String threadName = Thread.currentThread().getName();
@@ -1101,15 +1139,16 @@ public class JogoDaVelhaDireto extends JFrame
         
     }
 	
-    public static class Servidor implements Runnable {
+    
+    //essa função caralhuda é responsável por receber as mensagens de outros clientes contendo a lista de conectados deles
+    //se encontrar um cliente que não esteja na sua lista, ela o adiciona.
+    //verificação de cliente "repetido" feita pelo IP e porta, não pelo nickname.
+    public static class ServidorDePessoas implements Runnable {
 	    @SuppressWarnings("deprecation")
 		public void run() {
 	        
 	        try {
 	        	
-	        	//tem que criar UM servidor, daí se rodar o baguio de novo, tem que verificar que o servidor já está criado...
-	        	//verificando com a porta que está tentando ser usada
-	        	//daí os outros precisam criar CLIENTES. sim, vai ter cliente e servidor, não tem como fugir disso --'
 	        	
 	        	//ServerSocket conectados = new ServerSocket(10101);
 	        	
@@ -1129,42 +1168,59 @@ public class JogoDaVelhaDireto extends JFrame
             	conectados = new ServerSocket(10101); 
             	String response;
             	
-	            for (int i = 0; i < 99; i++) {
+	           while(true) {
 	    	        
-	            	
-					
-					textAreaa.append("Aguardando conexao...\n");
-					
-					conectar2 = conectados.accept();
-					
-					saida = new ObjectOutputStream(conectar2.getOutputStream());
-					saida.flush();
-					entrada = new ObjectInputStream(conectar2.getInputStream());
-					response = entrada.readLine();
-					
-					
-					textAreaa.append("CLIENTE FALOU: "+ response + "\n");
-					
-					
-					if (response.startsWith("WELCOME")) {
+	            	try {
+						//textArea.append("Aguardando conexao...\n");
+						
+						conectar2 = conectados.accept();
+						
+						saida = new ObjectOutputStream(conectar2.getOutputStream());
+						saida.flush();
+						entrada = new ObjectInputStream(conectar2.getInputStream());
+						response = (String)entrada.readObject();
+						
+						//textArea.append("CLIENTE FALOU: "+ response + "\n");
 						
 						
-					} else if (response.startsWith("OPPONENT_MOVED")) {
 						
-					}
-					
-					textAreaa.append("Conexao finalizada\n ");
-	            	
-	            	
-	            	
-	            	
-	            	
-	            	
-	            	
-	            	System.out.println("Passou na thread "+ i);
+						if (response.startsWith("ADDCLIENT")) {
+							String mensagemRecebida = response.substring(10);
+							String partes[] = mensagemRecebida.split("<#> ");
+							
+							for (int i = 0; i < partes.length; i++) {
+								
+								//Verifica se a pessoa que ta entrando ja ta na lista
+								int achou = 0;
+								for (int k = 0; k < listaPessoasOnline.size(); k++) {
+									//System.out.println("Ta passando aqui. [éoq|" + listaPessoasOnline.get(k).substring(0, 20) +"|==|"+partes[i].substring(0, 20));
+									if (listaPessoasOnline.get(k).substring(0, 20).equals(partes[i].substring(0, 20)) ){
+										achou = 1;	//Se tiver alguem, fica 1
+										//System.out.println("Achou!!!");
+									}
+								}
+								if (achou == 0){ //Se nao tiver ainda, adiciona
+									listaPessoasOnline.add(partes[i]);
+								}
+							}
+							
+						//função para ser implementada. detectaria caso algum cliente se desconectou, para o remover da lista
+						} else if (response.startsWith("DELETECLIENT")) {
+							
+						}
+						
+						//textArea.append("Conexao finalizada\n ");
+		            							
+						//String partes[] = mensagemRecebida.split(" <> ");
+						//textAreaa.append(""+ partes[0] + "\n");
+		            	
+		            	
+		            	System.out.println("Passou na thread de atualizar pessoas");
+	            	} catch (Exception e) {
+	            		e.printStackTrace();
+	            	}
 
 	                Thread.sleep(1000);
-	                // Print a message
 
 	            }
 	        } catch (Exception e) {
@@ -1173,6 +1229,135 @@ public class JogoDaVelhaDireto extends JFrame
 			}
 	    }
     }
+    
+    
+    //função que envia a mensagem contendo sua lista de clientes para todos os clientes contidos em sua lista.
+    //percorre todos os armazenados na lista (menos sí próprio) e envia uma mensagem com a lista completa
+    //função também imrpime no TextAreaa a lista de clientes conectados.
+    public static class AtualizaListaDeOnline implements Runnable {
+	    @SuppressWarnings("deprecation")
+		public void run() {
+
+	    	try {
+				Thread.sleep(100);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+	    	
+	    	//na primeira iteração, se adiciona na lista.
+	    	listaPessoasOnline.add(meuIPLocal +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
+
+	    	while(true){
+            	try{
+            		Thread.sleep(2000);
+            		//toda iteração zera o textAreaa e adiciona os clientes de novo.
+            		textAreaa.setText("Online\n");
+            		
+            		System.out.println(listaPessoasOnline.size());
+            		
+            		for (int i = 0; i < listaPessoasOnline.size(); i++) {
+	            		String partes[] = listaPessoasOnline.get(i).split(" <> ");
+	            		
+	            		if (partes[0].equals(meuIPLocal)){
+	            			//System.out.println("O ip é igual!");
+	            			continue;
+	            		}
+	            		
+	            		textAreaa.append(""+ partes[0] + ":");
+	            		textAreaa.append(""+ partes[1] + " -> ");
+	            		textAreaa.append(""+ partes[2] + "\n");
+	    				System.out.println(textAreaa.getText());
+	    				
+	    				//Mandar pra galera
+	    				//Broadcast do IP para todos.
+	    				try {
+	    					
+	    					Socket conectar3 = null;
+	    					ObjectOutputStream saida3 = null;
+	    					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
+	    					conectar3 = new Socket(partes[0], 10101);
+	    					
+	    					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
+	    					saida3.flush();
+	    					
+	    					String stringMelhor = "ADDCLIENT ";
+	    					for (int j = 0; j < listaPessoasOnline.size(); j++) {
+	    						stringMelhor = stringMelhor + listaPessoasOnline.get(j);
+	    					}
+	    					saida3.writeObject(stringMelhor);
+	    					
+	    					conectar3.close();
+	    					
+	    				} catch(Exception e) { 
+	    					System.out.println(e.getStackTrace());
+	    				}
+	    				
+            		}
+                	
+
+                	System.out.println("Passou na thread atualizadora de text fields ");
+                	System.out.println("Lista das ppl: "+listaPessoasOnline);
+                    // Print a message
+
+            		
+            	} catch ( Exception e){
+            		e.printStackTrace();
+            	}
+				
+            }
+      
+	    }
+    }
+    
+    
+    
+ // --- PEER BUTTON THREAD ---
+ 	private class PeerButtonThread implements Runnable
+ 	{	
+ 		public PeerButtonThread(String name)
+ 		{
+ 			new Thread(this, name).start();
+ 		}
+ 		
+ 		public void run()
+ 		{
+ 			try 
+ 			{
+ 				//peer.setEnabled(false);
+ 				//listaPessoasOnline.add(meuIPLocal +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
+ 				
+ 				//Broadcast do IP para todos.
+				try {
+					
+					Socket conectar3 = null;
+					ObjectOutputStream saida3 = null;
+					//conectar3 = new Socket(ip.getText(), Integer.parseInt(port.getText()));
+					conectar3 = new Socket(ip.getText(), 10101);
+					//conectar3 = new Socket("192.168.1.33", 10101);
+					
+					saida3 = new ObjectOutputStream(conectar3.getOutputStream());
+					saida3.flush();
+					
+					saida3.writeObject("ADDCLIENT "+ meuIPLocal +" <> "+ port.getText() +" <> "+ nick.getText() + " <#> ");
+					
+					conectar3.close();
+					
+				} catch(Exception e) { 
+					System.out.println(e.getStackTrace());
+				}
+ 				
+ 				
+ 			}
+ 			catch (Exception e) 
+ 			{ 
+ 				//finaliza();
+ 				//reinicia();
+ 				try { JOptionPane.showMessageDialog(null, "PeerButton: Error while joining peer:\n" + e);  } catch (ExceptionInInitializerError exc) { }
+ 			}
+ 			
+ 		}
+ 	}
 	
 	
 	
