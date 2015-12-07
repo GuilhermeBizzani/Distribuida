@@ -1313,6 +1313,9 @@ public class JogoDaVelhaDireto extends JFrame
     
     
  // --- PEER BUTTON THREAD ---
+    //função responsável por se conectar a outro cliente que já está com o "jogo" rodando.
+    //tem que digitar o IP da pessoa no campos de IP e clicar em Peer, então ele passará a sua referência para o destinatário.
+    //a porta foi deixada fixa em 10101.
  	private class PeerButtonThread implements Runnable
  	{	
  		public PeerButtonThread(String name)

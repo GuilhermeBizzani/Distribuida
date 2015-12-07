@@ -1,6 +1,8 @@
-/Threads.class
-/Threads$MessageLoop.class
-/JogoDaVelhaDireto$MessageLoop.class
+/JogoDaVelhaDireto$16.class
+/JogoDaVelhaDireto$AtualizaListaDeOnline.class
+/JogoDaVelhaDireto$PeerButtonThread.class
+/JogoDaVelhaDireto$ServidorDePessoas.class
+/JogoDaVelhaDireto$ServidorDePessoas$AtualizaListaDeOnline.class
 /JogoDaVelhaDireto$1.class
 /JogoDaVelhaDireto$10.class
 /JogoDaVelhaDireto$11.class
@@ -16,6 +18,3 @@
 /JogoDaVelhaDireto$7.class
 /JogoDaVelhaDireto$8.class
 /JogoDaVelhaDireto$9.class
-/JogoDaVelhaDireto$Servidor.class
-/JogoDaVelhaDireto$ReceberMsg.class
-/JogoDaVelhaDireto$IniciarJogo.class
